@@ -1,131 +1,203 @@
-# TypeScript Project Template
+# BTCPay-JS
 
-[![Bun](https://img.shields.io/badge/Bun-000000?style=for-the-badge&logo=bun&logoColor=white)](https://bun.sh)
-[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://typescriptlang.org)
-[![ESLint](https://img.shields.io/badge/ESLint-4B3263?style=for-the-badge&logo=eslint&logoColor=white)](https://eslint.org)
-[![Prettier](https://img.shields.io/badge/Prettier-F7B93E?style=for-the-badge&logo=prettier&logoColor=black)](https://prettier.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+**Type-safe Node.js and Bun SDK for the BTCPay Server HTTP API.**
 
-> A modern TypeScript project template with Bun runtime, featuring an epic setup wizard and best practices out of the box.
+BTCPay-JS wraps every public BTCPay Server endpoint with first-class TypeScript support, predictable error handling, and a developer ergonomics layer that matches the mental model of the original REST API.
 
-## 🚀 Features
+## Table of contents
 
-- **⚡ Bun Runtime** - Fast package management and bundling
-- **🎯 TypeScript 5.0** - Full type safety with strict configuration
-- **🎨 ESLint + Prettier** - Code quality and consistent formatting
-- **📦 Zero Config** - Works out of the box with sensible defaults
-- **🧙‍♂️ Setup Wizard** - Interactive project initialization with random memes
-- **🔧 VS Code Ready** - Optimized settings and extension recommendations
+- [Why BTCPay-JS?](#why-btcpay-js)
+- [Requirements](#requirements)
+- [Installation](#installation)
+- [Quick start](#quick-start)
+- [Working with resources](#working-with-resources)
+- [Error handling](#error-handling)
+- [Advanced configuration](#advanced-configuration)
+- [Local development](#local-development)
+- [FAQ](#faq)
+- [Contributing](#contributing)
+- [License](#license)
 
-## 🎭 Quick Start
+## Why BTCPay-JS?
 
-1. **Use this template:**
+- **Full coverage**: Stores, invoices, wallets, apps, payouts, pull-payments, lightning, notifications, server management, and webhooks ship as dedicated clients.
+- **First-class TypeScript**: Strong types for every request and response, plus discriminated error classes (`BTCPayError`, `BTCPayValidationError`, etc.).
+- **Modern runtime support**: Works anywhere `fetch` and `AbortController` are available (Node.js ≥ 18, Bun ≥ 1.0, Deno via npm specifier).
+- **Zero-config HTTP layer**: Authorization header management, JSON serialization, multipart form data, query string handling, and timeout support are handled for you.
+- **Ergonomic API surface**: Fluent helpers (`client.invoices(storeId)`, `client.webhooks()`) mirror the way you already use BTCPay Server.
 
-2. **Run the setup wizard:**
+## Requirements
 
-   ```bash
-   bun run setup
-   ```
+- Node.js **18+** or Bun **1.0+** (both ship the built-in `fetch` implementation used by the SDK).
+- A BTCPay Server instance with an API key that has the permissions you plan to exercise.
 
-3. **Start developing:**
-   ```bash
-   bun run dev
-   ```
+## Installation
 
-The setup wizard will:
+```bash
+# npm
+npm install @oneshot101/btcpay-js
 
-- Configure your project name and description
-- Set up your author information (from git config)
-- Generate a clean `src/index.ts` entry point
-- Create a project-specific README
-- Format everything with Prettier
-- Clean up after itself
+# pnpm
+pnpm add @oneshot101/btcpay-js
 
-## 📋 Available Scripts
+# yarn
+yarn add @oneshot101/btcpay-js
 
-| Script                 | Description                      |
-| ---------------------- | -------------------------------- |
-| `bun run setup`        | Run the interactive setup wizard |
-| `bun run dev`          | Development with hot reload      |
-| `bun run build`        | Build for production             |
-| `bun start`            | Run the built application        |
-| `bun run lint`         | Lint and fix code                |
-| `bun run lint:check`   | Check for linting errors         |
-| `bun run format`       | Format code with Prettier        |
-| `bun run format:check` | Check code formatting            |
-| `bun run type-check`   | TypeScript type checking         |
-
-## 🏗️ Project Structure
-
-```
-├── src/
-│   └── index.ts          # Main entry point
-├── .eslintrc.cjs         # ESLint configuration
-├── .prettierrc           # Prettier configuration
-├── .gitattributes        # Git line ending enforcement
-├── .gitignore            # Git ignore rules
-├── .editorconfig         # Editor configuration
-├── tsconfig.json         # TypeScript configuration
-├── package.json          # Dependencies and scripts
-└── setup.ts              # Epic setup wizard (self-deleting)
+# bun
+bun add @oneshot101/btcpay-js
 ```
 
-## ⚙️ Configuration
+## Quick start
 
-### TypeScript
+```ts
+import { BTCPayClient } from '@oneshot101/btcpay-js';
 
-- Strict type checking enabled
-- Modern ES2022 target
-- Path aliases support ready
-- Declaration files generated
+const client = new BTCPayClient({
+  baseUrl: 'https://pay.example.com/',
+  apiKey: process.env.BTCPAY_API_KEY!,
+  timeout: 10_000, // optional; defaults to no timeout
+});
 
-### ESLint
+const storeId = '2e23292d-3f3d-4f34-8c0c-9dcafe915b12';
 
-- TypeScript-specific rules
-- Import organization
-- Prettier integration
-- Custom rule preferences
+// Create an invoice
+const { data: invoice } = await client.invoices(storeId).createInvoice({
+  amount: '125.00',
+  currency: 'USD',
+  metadata: { orderId: 'ORDER-1001', customerEmail: 'satoshi@example.com' },
+  checkout: {
+    redirectURL: 'https://shop.example.com/thank-you',
+    requiresRefundEmail: true,
+  },
+});
 
-### Prettier
+console.log(invoice.checkoutLink);
+```
 
-- LF line endings enforced
-- Consistent code formatting
-- Works with ESLint
+The SDK always returns an `ApiResponse<T>` object so you have access to the response body (`data`), HTTP status, and headers.
 
-### VS Code
+## Working with resources
 
-- Auto-format on save
-- Extension recommendations
-- Workspace settings included
+`BTCPayClient` exposes purpose-built sub-clients. Some are accessed directly as properties, while others need a store context. The table below summarizes the most common entry points:
 
-## 🎨 Code Style
+| Accessor                                                         | Description                                                                               |
+| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `client.stores`, `client.users`, `client.server`, `client.files` | Global BTCPay administration helpers.                                                     |
+| `client.apiKeys`, `client.notifications`                         | Create and revoke API keys, list device notifications.                                    |
+| `client.apps`, `client.paymentMethods`, `client.wallets`         | Manage apps, payment methods, on-chain wallets, and related settings.                     |
+| `client.lightning`, `client.lightningAddresses`                  | Create invoices, channels, addresses, and manage LNURL withdraw/pay flows.                |
+| `client.pullPayments`, `client.payouts`                          | Work with pull-payment schedules and individual payout mutations.                         |
+| `client.invoices(storeId)`                                       | Returns an `InvoicesClient` bound to one store ID so you can list/create/update invoices. |
+| `client.paymentRequests()`                                       | Manage standalone payment requests independent of stores.                                 |
+| `client.webhooks()`                                              | Create/list/update webhooks and inspect their delivery history.                           |
 
-This template enforces:
+### Listing invoices
 
-- **Arrow functions** preferred over function declarations
-- **const/let** over var (prefer const when possible)
-- **Import organization** with automatic sorting
-- **LF line endings** across all platforms
-- **No trailing semicolons** (handled by Prettier)
-- **Consistent quotes** and spacing
+```ts
+const invoicesClient = client.invoices(storeId);
+const { data: invoiceList } = await invoicesClient.getInvoices({
+  status: ['New', 'Processing'],
+  take: 25,
+});
 
-## 🛠️ Built With
+invoiceList.data.forEach(entry => {
+  console.log(entry.id, entry.status, entry.amount);
+});
+```
 
-- [Bun](https://bun.sh) - Fast JavaScript runtime and package manager
-- [TypeScript](https://typescriptlang.org) - Type-safe JavaScript
-- [ESLint](https://eslint.org) - Code quality and consistency
-- [Prettier](https://prettier.io) - Code formatting
+### Managing webhooks
 
-## 📝 License
+```ts
+const webhooks = client.webhooks();
 
-MIT - see [LICENSE](LICENSE) for details.
+const { data: createdWebhook } = await webhooks.create(storeId, {
+  url: 'https://shop.example.com/webhooks/btcpay',
+  enabled: true,
+  authorizedEvents: { everything: true },
+  secret: process.env.BTCPAY_WEBHOOK_SECRET,
+});
 
-## 💡 Why This Template?
+await webhooks.redeliverWebhook(storeId, createdWebhook.id, 'delivery-id');
+```
 
-- **Modern Stack**: Bun + TypeScript for maximum performance and type safety
-- **Developer Experience**: Everything configured for a smooth development workflow
-- **Best Practices**: Follows current TypeScript and Node.js best practices
-- **Fun Setup**: Because setting up projects should be enjoyable, not boring
-- **Zero Bloat**: Only includes what you actually need
+### Using wallets
 
----
+```ts
+const { data: wallet } = await client.wallets.getWalletOverview(storeId, 'BTC-onchain');
+const { data: feerate } = await client.wallets.getWalletFeeRate(storeId, 'BTC-onchain', 3);
+```
+
+Every method is fully typed, so your editor will autocomplete payloads and highlight missing or extra fields.
+
+## Error handling
+
+All methods either resolve to `ApiResponse<T>` or throw one of the custom error classes:
+
+- `BTCPayAuthenticationError`: Missing/invalid token or insufficient permissions (HTTP 401).
+- `BTCPayValidationError`: The server returned a detailed validation payload (HTTP 400/422). Includes `validationErrors` for field-level issues.
+- `BTCPayError`: Catch-all for non-validation server errors. Exposes `statusCode` and the server-supplied `ProblemDetails` when available.
+- `BTCPayNetworkError`: Networking issues or unexpected low-level failures. Includes the original error for logging.
+
+```ts
+try {
+  await client.stores.getStore(storeId);
+} catch (error) {
+  if (error instanceof BTCPayValidationError) {
+    console.error('Validation failed', error.validationErrors);
+  } else if (error instanceof BTCPayAuthenticationError) {
+    console.error('Check your API key');
+  } else {
+    console.error('Unhandled BTCPay error', error);
+  }
+}
+```
+
+## Advanced configuration
+
+- **Timeouts**: Pass a `timeout` in milliseconds to the constructor to automatically cancel long-running HTTP requests via `AbortSignal.timeout`.
+- **Custom headers**: Most helper methods expose `options` objects with `headers` so you can add idempotency keys or tracing metadata.
+- **Multipart/form-data**: Methods that accept `FormData` (for example, file uploads) automatically skip `Content-Type` so native boundary handling stays intact.
+- **Query parameters**: Arrays, booleans, and numbers are serialized for you. Pass `undefined`/`null` to omit optional parameters.
+
+## Local development
+
+Clone the repo and install dependencies with your preferred package manager (Bun is the default here):
+
+```bash
+bun install
+```
+
+Available scripts:
+
+- `bun run dev` — Type-check in watch mode while you iterate.
+- `bun run build` — Emit ESM output to `dist/` and rewrite path aliases via `tsc-alias`.
+- `bun run lint` / `bun run lint:check` — ESLint with TypeScript support.
+- `bun run format` / `bun run format:check` — Prettier enforcement.
+- `bun run typecheck` — CI-friendly type checking with no emit.
+- `bun run clean` — Remove the `dist/` directory.
+
+## FAQ
+
+**Does this work in the browser?**
+
+The SDK targets server runtimes. While technically compatible with environments that expose `fetch`, you should avoid embedding your BTCPay API key in browser bundles.
+
+**Does it track BTCPay Server releases?**
+
+Yes. Each release is versioned following semver and aligns with the latest public BTCPay Server API schema at publish time.
+
+**How are breaking changes communicated?**
+
+Breaking changes increment the major version and are documented in the release notes and changelog (coming soon).
+
+## Contributing
+
+Issues and pull requests are welcome. Please:
+
+1. Fork and create a feature branch.
+2. Run `bun run lint` and `bun run typecheck` before opening a PR.
+3. Add or update documentation/tests whenever you extend the public API.
+
+## License
+
+MIT © Andrew
