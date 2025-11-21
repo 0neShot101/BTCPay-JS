@@ -3,7 +3,7 @@
  */
 
 import { BTCPayAuthenticationError, BTCPayError, BTCPayNetworkError, BTCPayValidationError } from './errors';
-import { isProblemDetails, isRecord, isValidationProblemDetails } from './type-guards';
+import { isProblemDetails, isValidationProblemDetails } from './type-guards';
 
 import type { ApiResponse, BTCPayClientConfig, RequestOptions } from '@typings/client';
 
@@ -117,9 +117,6 @@ export class HttpClient {
         data = null as T;
       } else {
         const jsonData = await response.json();
-
-        if (isRecord(jsonData) === false) throw new BTCPayError('Invalid response format', response.status);
-
         data = jsonData as T;
       }
 

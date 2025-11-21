@@ -32,10 +32,3 @@ export const isValidationProblemDetails = (value: unknown): value is ValidationP
 
   return Object.values(errors).every(val => Array.isArray(val) === true && val.every(item => typeof item === 'string'));
 };
-
-export const isRecord = (value: unknown): value is Record<string, unknown> => {
-  if (typeof value !== 'object') return false;
-  if (value === null) return false;
-  if (Array.isArray(value) === true) return false;
-  return true;
-};
