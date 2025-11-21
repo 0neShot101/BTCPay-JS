@@ -49,7 +49,9 @@
 
     // Modules
     "paths": {
-      // add your path aliases here
+      "@typings/*": ["./src/typings/*"],
+      "@structures/*": ["./src/structures/*"],
+      "@utils/*": ["./src/utils/*"]
     },
 
     // Emit Rules
