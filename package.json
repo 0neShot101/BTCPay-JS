@@ -1,31 +1,45 @@
 {
-  "name": "ts",
-  "version": "0.0.1",
-  "description": "t",
+  "name": "@oneshot101/btcpay-js",
+  "version": "0.1.0",
+  "description": "A type-safe, developer-friendly Node.js SDK for BTCPay Server",
   "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "setup": "bun install && bun run setup.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
-    "start": "bun dist/index.js",
-    "dev": "bun --watch src/index.ts",
+    "build": "tsc && tsc-alias -p tsconfig.json",
+    "dev": "tsc --watch",
     "clean": "rm -rf dist",
     "lint": "eslint src/**/*.{ts,tsx} --fix",
     "lint:check": "eslint src/**/*.{ts,tsx}",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "type-check": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "bun run clean && bun run build"
   },
   "keywords": [
-    "bun",
+    "btcpay",
+    "btcpay-server",
+    "bitcoin",
+    "payment",
+    "crypto",
     "typescript",
-    "template",
-    "eslint",
-    "prettier",
-    "setup-script"
+    "sdk",
+    "api-client"
   ],
-  "author": "Andrew Tandy <andrewtandy12@gmail.com>",
+  "author": "Andrew",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0neShot101/BTCPay-JS.git"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^20.0.0",
@@ -36,9 +50,11 @@
     "eslint-plugin-import": "^2.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "prettier": "^3.0.0",
+    "tsc-alias": "^1.8.16",
     "typescript": "^5.0.0"
   },
   "engines": {
+    "node": ">=18.0.0",
     "bun": ">=1.0.0"
   }
 }
