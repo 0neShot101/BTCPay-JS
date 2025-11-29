@@ -1,6 +1,6 @@
 {
   "name": "@oneshot101/btcpay-js",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A type-safe, developer-friendly Node.js SDK for BTCPay Server",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
